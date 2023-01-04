@@ -1,7 +1,7 @@
 import requests
 from assertpy import assert_that
 
-from config import BASE_URI
+from config import BASE_URI_PEOPLE_API
 from utils.print_helpers import pretty_print
 from uuid import uuid4
 from json import dumps
@@ -27,7 +27,7 @@ def test_new_person_can_be_added():
     print('\nPOST - Response status code is {}'.format(post_response.status_code))
     assert_that(post_response.status_code).is_equal_to(204)
 
-    get_response = requests.get(BASE_URI)
+    get_response = requests.get(BASE_URI_PEOPLE_API)
     get_response_json = get_response.json()
     is_new_user_created = [record['lname'] for record in get_response_json].count(last_name) == 1
     assert_that(is_new_user_created).is_true()
@@ -43,7 +43,7 @@ def test_person_can_be_deleted():
     print(new_user_full_data)
     person_id_to_be_deleted = new_user_full_data['person_id']
 
-    response = requests.delete(url=f"{BASE_URI}/{person_id_to_be_deleted}")
+    response = requests.delete(url=f"{BASE_URI_PEOPLE_API}/{person_id_to_be_deleted}")
     assert_that(response.status_code).is_equal_to(200)
 
     all_user, _ = get_all_users()
@@ -70,7 +70,7 @@ def test_person_can_be_updated():
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    response = requests.put(url=f"{BASE_URI}/{person_id_to_be_updated}", data=payload, headers=headers)
+    response = requests.put(url=f"{BASE_URI_PEOPLE_API}/{person_id_to_be_updated}", data=payload, headers=headers)
     assert_that(response.status_code).is_equal_to(200)
 
     all_users, _ = get_all_users()
@@ -95,11 +95,11 @@ def create_new_user():
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    post_response = requests.post(url=BASE_URI, data=payload, headers=headers)
+    post_response = requests.post(url=BASE_URI_PEOPLE_API, data=payload, headers=headers)
     return last_name, post_response
 
 
 def get_all_users():
-    response = requests.get(BASE_URI)
+    response = requests.get(BASE_URI_PEOPLE_API)
     response_json = response.json()
     return response, response_json
