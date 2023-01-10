@@ -1,10 +1,16 @@
+import random
+
+import pytest
 import requests
 from assertpy import assert_that
+from jsonpath_ng import parse
+from uuid import uuid4
+from json import dumps, loads
 
 from config import BASE_URI_PEOPLE_API
 from utils.print_helpers import pretty_print
-from uuid import uuid4
-from json import dumps
+from utils.file_reader import read_file
+
 
 
 def test_read_all_has_kent():
@@ -85,16 +91,44 @@ def test_person_can_be_updated():
     print('\n')
     print(new_user_full_data)
 
-def create_new_user():
-    last_name = f'User {uuid4()}'
-    payload = dumps({
-        'fname': 'New',
-        'lname': last_name
-    })
+
+def test_person_can_be_added_with_a_json_template(create_data):
+    create_new_user(create_data)
+    response, _ = get_all_users()
+    records = loads(response.text)
+    jsonpath_expr = parse('$.[*].lname')
+    result = [match.value for match in jsonpath_expr.find(records)]
+
+    expected_last_name = create_data['lname']
+    assert_that(result).contains(expected_last_name)
+
+
+@pytest.fixture
+def create_data():
+    payload = read_file('create_person.json')
+
+    random_number = random.randint(0, 9999)
+    randomized_last_name = f'Last_Name_{random_number}'
+    payload['lname'] = randomized_last_name
+    yield payload
+
+
+def create_new_user(data=None):
+    if data is None:
+        last_name = f'User {uuid4()}'
+        payload = dumps({
+            'fname': 'New',
+            'lname': last_name
+        })
+    else:
+        last_name = data['lname']
+        payload = dumps(data)
+
     headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
+
     post_response = requests.post(url=BASE_URI_PEOPLE_API, data=payload, headers=headers)
     return last_name, post_response
 
