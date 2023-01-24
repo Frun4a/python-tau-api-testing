@@ -3,29 +3,29 @@ import random
 import pytest
 import requests
 from assertpy import assert_that
-from jsonpath_ng import parse
 from uuid import uuid4
 from json import dumps, loads
 
 from config import BASE_URI_PEOPLE_API
+from tests.helpers.people_helpers import search_nodes_using_json_path
 from utils.print_helpers import pretty_print
 from utils.file_reader import read_file
+from clients.people.people_client import PeopleClient
+from assertions.people_assertions import *
 
+client = PeopleClient()
 
 
 def test_read_all_has_kent():
-    response, response_json = get_all_users()
-    # pretty_print(response_json)
+    response = client.read_all_persons()
 
     print('\nGET - Response status code is {}'.format(response.status_code))
-    assert_that(response.status_code).is_equal_to(200)
+    assert_that(response.status_code).is_equal_to(requests.codes.ok)
 
-    first_names = [person['fname'] for person in response_json]
+    first_names = [person['fname'] for person in response.as_dict]
     print('\nNames in the response: {}'.format(', '.join(first_names)))
-    assert_that(first_names).contains('Kent')
 
-    # better assertions
-    assert_that(response.json()).extracting('fname').is_not_empty().contains('Kent')
+    assert_people_response_has_person_with_first_name(response, 'Kent')
 
 
 def test_new_person_can_be_added():
@@ -96,8 +96,8 @@ def test_person_can_be_added_with_a_json_template(create_data):
     create_new_user(create_data)
     response, _ = get_all_users()
     records = loads(response.text)
-    jsonpath_expr = parse('$.[*].lname')
-    result = [match.value for match in jsonpath_expr.find(records)]
+    # jsonpath_expr = parse('$.[*].lname')
+    result = search_nodes_using_json_path(records, '$.[*].lname')
 
     expected_last_name = create_data['lname']
     assert_that(result).contains(expected_last_name)
